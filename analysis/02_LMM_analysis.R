@@ -31,11 +31,11 @@
 #   - pronghorn x winter 
 #   - pronghorn x summer 
 
-
 library(tidyverse)
 library(lme4)
 library(MuMIn)
 library(lmerTest)
+library(wCorr)
 
 
 # ---------------X
@@ -56,7 +56,7 @@ head(dat)
 (avail_logsr_cols <- cols[grepl("_sc", cols) & !grepl("used", cols)])
 
 dat <- dat %>%
-  select(subset, hr_id, animal_id, species, is_M, season, n.pts_X_n.days_norm, 
+  select(subset, hr_id, animal_id, species, is_M, season, n_days, n.pts_X_n.days_norm, 
          log_area, log_log_shape, all_of(avail_logsr_cols))
 head(dat)
 colnames(dat)
@@ -65,12 +65,13 @@ colnames(dat)
 dat_train <- filter(dat, subset == "Train")
 summary(dat_train)
 
+dat_test <- filter(dat, subset == "Test")
+summary(dat_test)
 
 
-
-# --------------X
-# ---- MODEL ----
-# --------------X
+# ----------------------X
+# ---- MODEL SET UP  ----
+# ----------------------X
 
 # Set up model structure
 # These will go in the formula() function
@@ -168,7 +169,7 @@ model_func <- function(data, model_name){
     tryCatch({
       mod.road_pvd <- lmer(formula.road_pvd,
                            weights = n.pts_X_n.days_norm, REML = T, na.action = na.omit,
-                           data = data_spp_ssn)
+                           data = data)
       return(mod.road_pvd)
     }, warning = function(w){
       cat("logSR paved roads", spp, ssn, ":", conditionMessage(w), "\n")
@@ -187,7 +188,7 @@ model_func <- function(data, model_name){
     tryCatch({
       mod.road_unpvd <- lmer(formula.road_unpvd,
                              weights = n.pts_X_n.days_norm, REML = T, na.action = na.omit,
-                             data = data_spp_ssn)
+                             data = data)
       return(mod.road_unpvd)
     }, warning = function(w){
       cat("logSR unpaved roads", spp, ssn, ":", conditionMessage(w), "\n")
@@ -206,7 +207,7 @@ model_func <- function(data, model_name){
     tryCatch({
       mod.fence <- lmer(formula.fence, 
                         weights = n.pts_X_n.days_norm, REML = T, na.action = na.omit, 
-                        data = data_spp_ssn)
+                        data = data)
       return(mod.fence)
     }, warning = function(w){ 
       cat("logSR fence", spp, ssn, ":", conditionMessage(w), "\n")
@@ -225,7 +226,7 @@ model_func <- function(data, model_name){
     tryCatch({
       mod.elev <- lmer(formula.elev,
                        weights = n.pts_X_n.days_norm, REML = T, na.action = na.omit,
-                       data = data_spp_ssn)
+                       data = data)
       return(mod.elev)
     }, warning = function(w){
       cat("elevation", spp, ssn, ":", conditionMessage(w), "\n")
@@ -244,30 +245,109 @@ model_func <- function(data, model_name){
     tryCatch({
       mod.rough <- lmer(formula.rough,
                         weights = n.pts_X_n.days_norm, REML = T, na.action = na.omit,
-                        data = data_spp_ssn)
+                        data = data)
       return(mod.rough)
     }, warning = function(w){
       cat("roughness", spp, ssn, ":", conditionMessage(w), "\n")
     })
   }
   
+  # ... h. logSR Forage ----
   if(model_name == "logSR_forage"){
+    cat("logSR NDVI Herb Cover\n")
+    formula.forage <- formula(
+      paste(response_vars["logSR_forage"],
+            paste(c(paste0(avail, "forage"), paste0(avail, lf),
+                    rm_j("forage"), ind, int.lf, rand),
+                  collapse = " + "),
+            collapse = " "))
     
+    tryCatch({
+      mod.forage <- lmer(formula.forage,
+                       weights = n.pts_X_n.days_norm, REML = T, na.action = na.omit,
+                       data = data)
+      return(mod.forage)
+    }, warning = function(w){
+      cat("forage", spp, ssn, ":", conditionMessage(w), "\n")
+    })
   }
   
+  # ... i. logSR Shrub Cover ----
   if(model_name == "logSR_cvr.shrub"){
+    formula.shrub <- formula(
+      paste(response_vars["logSR_cvr.shrub"],
+            paste(c(paste0(avail, "cvr.shrub"), paste0(avail, lf),
+                    rm_j("cvr.shrub"), ind, int.lf, rand),
+                  collapse = " + "),
+            collapse = " "))
     
+    tryCatch({
+      mod.shrub <- lmer(formula.shrub,
+                        weights = n.pts_X_n.days_norm, REML = T, na.action = na.omit,
+                        data = data)
+      return(mod.shrub)
+    }, warning = function(w){
+      cat("shrub cover", spp, ssn, ":", conditionMessage(w), "\n")
+    })
   }
   
+  # ... j. logSR Tree Cover ----
   if(model_name == "logSR_cvr.tree"){
+    formula.tree <- formula(
+      paste(response_vars["logSR_cvr.tree"],
+            paste(c(paste0(avail, "cvr.tree"), paste0(avail, lf),
+                    rm_j("cvr.tree"), ind, int.lf, rand),
+                  collapse = " + "),
+            collapse = " "))
     
+    tryCatch({
+      mod.tree <- lmer(formula.tree,
+                       weights = n.pts_X_n.days_norm, REML = T, na.action = na.omit,
+                       data = data)
+      return(mod.tree)
+    }, warning = function(w){
+      cat("tree cover", spp, ssn, ":", conditionMessage(w), "\n")
+    })
   }
   
+  # ... k. logSR Snow Depth ----
   if(model_name == "logSR_snd" & ssn == "Winter"){
+    formula.snd <- formula(
+      paste(response_vars["logSR_snd"],
+            paste(c(paste0(avail, "snd"), paste0(avail, lf), rm_j("snd"), ind,
+                    int.lf, rand),
+                  collapse = " + "),
+            collapse = " "))
     
+    tryCatch({
+      mod.snd <- lmer(formula.snd,
+                      weights = n.pts_X_n.days_norm, REML = T, na.action = na.omit,
+                      data = data)
+      return(mod.snd)
+    }, warning = function(w){
+      cat("snow depth", spp, ssn, ":", conditionMessage(w), "\n")
+    })
   }
 }
 
 
+# # Loop through each species-season combination 
+# lapply(split(dat_train, dat_train$species), function(dat_spp){
+#   lapply(split(dat_spp, dat_spp$season), function(dat_spp_ssn){
+#     # Loop through each response variable
+#     lapply(names(response_vars), function(model){
+#       model_func(dat_spp_ssn, model)
+#     })
+#   })
+# })
 
+# --------------X
+# ---- MODEL ----
+# --------------X
 
+# ... Mule Deer ----
+# ... ... Winter ----
+mod_md_win_area <- dat_train %>%
+  filter(species == "Mule Deer" & season == "Winter") %>%
+  model_func(., "log_area")
+summary(mod_md_win_area)
