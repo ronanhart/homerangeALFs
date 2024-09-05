@@ -51,3 +51,4 @@ rsconnect/
 # Data folders 
 # (raw_data is uploaded to Dryad and prepped_data can be re-made with R)
 *_data/*
+results/*
