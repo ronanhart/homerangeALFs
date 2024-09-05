@@ -3,6 +3,45 @@
 # X------------ Model Validation -------------X
 # X===========================================X
 
+library(tidyverse)
+library(lme4)
+library(MuMIn)
+library(lmerTest)
+library(wCorr)
+
+# ---------------X
+# ---- SET UP ----
+# ---------------X
+data_dir <- "prepped_data/"
+result_dir <- "results/"
+
+# ... Load & Prep the data ----
+dat_used_avail_wide <- read.csv(paste0(in_dir, "used_avail_wide.csv"))
+hr_info <- read.csv(paste0(in_dir, "hr_info_full_si.csv"))
+subset_info <- read.csv(paste0(in_dir, "subset_info.csv"))
+
+# Join into one data set and select only the columns that are necessary for modeling
+dat <- left_join(dat_used_avail_wide, hr_info, by = "hr_id") %>%
+  left_join(subset_info, by = c("hr_id", "species", "sex", "season"))
+head(dat)
+(cols <- colnames(dat))
+(avail_logsr_cols <- cols[grepl("_sc", cols) & !grepl("used", cols)])
+
+dat <- dat %>%
+  select(subset, hr_id, animal_id, species, is_M, season, n_days, n.pts_X_n.days_norm, 
+         log_area, log_log_shape, all_of(avail_logsr_cols))
+head(dat)
+colnames(dat)
+
+# Subset the data based on testing flags (from 02a_data_subsetting)
+dat_test <- filter(dat, subset == "Test")
+summary(dat_test)
+
+
+# ...Load the models ----
+all_mods <- readRDS(paste0(out_dir, "all_models.rds"))
+View(all_mods)
+
 # -------------------------X
 # ---- MODEL VALIDATION ----
 # -------------------------X
