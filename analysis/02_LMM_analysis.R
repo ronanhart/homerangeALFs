@@ -82,7 +82,7 @@ env <- c("elev", "rough", "forage", "cvr.shrub", "cvr.tree", "snd", "pdsi")
 lf <- c("rd.pvd", "rd.unpvd", "fence")
 
 # function to remove the given attribute_j from the list of logSR
-rm_j <- function(j){
+rm_j <- function(j, env){
   x <- paste0(logSR, c(lf, env))
   return(x[!grepl(j, x)])
 }
@@ -106,9 +106,15 @@ response_vars
 
 
 # Function that will run the given model with the given the species-season combo
-model_func <- function(data, model_name){
-  spp <- unique(data$species)
-  ssn <- unique(data$season)
+model_func <- function(model_name, data, spp, ssn){
+  if(!spp %in% c("Mule Deer", "Pronghorn") | 
+     !ssn %in% c("Winter", "Summer")){
+    stop("`spp` must be either `Mule Deer` or `Pronghorn`
+       `ssn` must be either `Winter` or `Summer`")
+  }
+  
+  # Filter the data to the given species and season
+  data <- filter(data, species == spp & season == ssn)
   
   # If it's summer, remove snow depth from a list of environmental predictors
   if(ssn == "Summer") env <- env[!env %in% "snd"] 
@@ -120,15 +126,15 @@ model_func <- function(data, model_name){
             paste(c(paste0(avail, c(lf, env)), ind, int.lf, "n_days", rand), 
                   collapse = " + "),
             collapse = " "))
-    
-    tryCatch({
-      mod.area <- lmer(formula.area,
-                       weights = n.pts_X_n.days_norm, REML = T, na.action = na.omit,
-                       data = data)
-      return(mod.area)
-    }, warning = function(w){
-      cat("log(area)", spp, ssn, ":", conditionMessage(w), "\n")
-    })
+    return(formula.area)
+    # tryCatch({
+    #   mod.area <- lmer(formula.area,
+    #                    weights = n.pts_X_n.days_norm, REML = T, na.action = na.omit,
+    #                    data = data)
+    #   return(mod.area)
+    # }, warning = function(w){
+    #   cat("log(area)", spp, ssn, ":", conditionMessage(w), "\n")
+    # })
   }
   
   # ... b. log(log(Shape)) ----
@@ -145,7 +151,7 @@ model_func <- function(data, model_name){
                     "n_days", rand), # include N days
                   collapse = " + "),
             collapse = " "))
-    
+   
     tryCatch({
       mod.shape <- lmer(formula.shape,
                         weights = n.pts_X_n.days_norm, REML = T, na.action = na.omit,
@@ -160,7 +166,7 @@ model_func <- function(data, model_name){
   if(model_name == "logSR_rd.pvd"){
     formula.road_pvd <- formula(
       paste(response_vars["logSR_rd.pvd"],
-            paste(c(paste0(avail, "rd.pvd"), rm_j("rd.pvd"), ind,
+            paste(c(paste0(avail, "rd.pvd"), rm_j("rd.pvd", env), ind,
                     # only have interactions with the focal ALF
                     int.lf[grepl("rd.pvd", int.lf)], rand),
                   collapse = " + "),
@@ -180,7 +186,7 @@ model_func <- function(data, model_name){
   if(model_name == "logSR_rd.unpvd"){
     formula.road_unpvd <- formula(
       paste(response_vars["logSR_rd.unpvd"],
-            paste(c(paste0(avail, "rd.unpvd"), rm_j("rd.unpvd"), ind,
+            paste(c(paste0(avail, "rd.unpvd"), rm_j("rd.unpvd", env), ind,
                     int.lf[grepl("rd.unpvd", int.lf)], rand),
                   collapse = " + "),
             collapse = " "))
@@ -199,17 +205,17 @@ model_func <- function(data, model_name){
   if(model_name == "logSR_fence"){
     formula.fence <- formula(
       paste(response_vars["logSR_fence"], 
-            paste(c(paste0(avail, "fence"), rm_j("fence"), ind, 
+            paste(c(paste0(avail, "fence"), rm_j("fence", env), ind, 
                     int.lf[grepl("fence", int.lf)], rand), 
                   collapse = " + "), 
             collapse = " "))
     
     tryCatch({
-      mod.fence <- lmer(formula.fence, 
-                        weights = n.pts_X_n.days_norm, REML = T, na.action = na.omit, 
+      mod.fence <- lmer(formula.fence,
+                        weights = n.pts_X_n.days_norm, REML = T, na.action = na.omit,
                         data = data)
       return(mod.fence)
-    }, warning = function(w){ 
+    }, warning = function(w){
       cat("logSR fence", spp, ssn, ":", conditionMessage(w), "\n")
     })
   }
@@ -218,7 +224,7 @@ model_func <- function(data, model_name){
   if(model_name == "logSR_elev"){
     formula.elev <- formula(
       paste(response_vars["logSR_elev"],
-            paste(c(paste0(avail, c("elev", lf)), rm_j("elev"), ind,
+            paste(c(paste0(avail, c("elev", lf)), rm_j("elev", env), ind,
                     int.lf, rand),
                   collapse = " + "),
             collapse = " "))
@@ -237,7 +243,7 @@ model_func <- function(data, model_name){
   if(model_name == "logSR_rough"){
     formula.rough <- formula(
       paste(response_vars["logSR_rough"],
-            paste(c(paste0(avail, c("rough", lf)), rm_j("rough"), ind,
+            paste(c(paste0(avail, c("rough", lf)), rm_j("rough", env), ind,
                     int.lf, rand),
                   collapse = " + "),
             collapse = " "))
@@ -254,11 +260,10 @@ model_func <- function(data, model_name){
   
   # ... h. logSR Forage ----
   if(model_name == "logSR_forage"){
-    cat("logSR NDVI Herb Cover\n")
     formula.forage <- formula(
       paste(response_vars["logSR_forage"],
             paste(c(paste0(avail, "forage"), paste0(avail, lf),
-                    rm_j("forage"), ind, int.lf, rand),
+                    rm_j("forage", env), ind, int.lf, rand),
                   collapse = " + "),
             collapse = " "))
     
@@ -277,7 +282,7 @@ model_func <- function(data, model_name){
     formula.shrub <- formula(
       paste(response_vars["logSR_cvr.shrub"],
             paste(c(paste0(avail, "cvr.shrub"), paste0(avail, lf),
-                    rm_j("cvr.shrub"), ind, int.lf, rand),
+                    rm_j("cvr.shrub", env), ind, int.lf, rand),
                   collapse = " + "),
             collapse = " "))
     
@@ -296,7 +301,7 @@ model_func <- function(data, model_name){
     formula.tree <- formula(
       paste(response_vars["logSR_cvr.tree"],
             paste(c(paste0(avail, "cvr.tree"), paste0(avail, lf),
-                    rm_j("cvr.tree"), ind, int.lf, rand),
+                    rm_j("cvr.tree", env), ind, int.lf, rand),
                   collapse = " + "),
             collapse = " "))
     
@@ -314,8 +319,8 @@ model_func <- function(data, model_name){
   if(model_name == "logSR_snd" & ssn == "Winter"){
     formula.snd <- formula(
       paste(response_vars["logSR_snd"],
-            paste(c(paste0(avail, "snd"), paste0(avail, lf), rm_j("snd"), ind,
-                    int.lf, rand),
+            paste(c(paste0(avail, "snd"), paste0(avail, lf), 
+                    rm_j("snd", env), ind, int.lf, rand),
                   collapse = " + "),
             collapse = " "))
     
@@ -331,23 +336,55 @@ model_func <- function(data, model_name){
 }
 
 
-# # Loop through each species-season combination 
-# lapply(split(dat_train, dat_train$species), function(dat_spp){
-#   lapply(split(dat_spp, dat_spp$season), function(dat_spp_ssn){
-#     # Loop through each response variable
-#     lapply(names(response_vars), function(model){
-#       model_func(dat_spp_ssn, model)
-#     })
-#   })
-# })
-
 # --------------X
 # ---- MODEL ----
 # --------------X
 
 # ... Mule Deer ----
 # ... ... Winter ----
-mod_md_win_area <- dat_train %>%
-  filter(species == "Mule Deer" & season == "Winter") %>%
-  model_func(., "log_area")
-summary(mod_md_win_area)
+md_win_mods <- lapply(names(response_vars), model_func, 
+                      data = dat_train, spp = "Mule Deer", ssn = "Winter")
+names(md_win_mods) <- names(response_vars)
+md_win_mods
+lapply(md_win_mods, summary)
+
+# ... ... Summer ----
+md_sum_mods <- lapply(names(response_vars), model_func, 
+                      data = dat_train, spp = "Mule Deer", ssn = "Summer")
+names(md_sum_mods) <- names(response_vars)
+md_sum_mods
+lapply(md_sum_mods, summary)
+
+
+# ... Pronghorn ----
+# ... ... Winter ----
+pr_win_mods <- lapply(names(response_vars), model_func, 
+                      data = dat_train, spp = "Pronghorn", ssn = "Winter")
+names(pr_win_mods) <- names(response_vars)
+
+# the tree cover model failed to converge because of the random effects
+# re-run but as a linear model instead of LMM
+pr_win_mods[["logSR_cvr.tree"]] 
+pr_win_tree <- lm(
+  formula(paste(response_vars["logSR_cvr.tree"],
+                paste(c(paste0(avail, "cvr.tree"), paste0(avail, lf),
+                        rm_j("cvr.tree", env), ind, int.lf),
+                      collapse = " + "),
+                collapse = " ")),
+  weights = n.pts_X_n.days_norm, na.action = na.omit, 
+  data = filter(dat_train, species == "Pronghorn" & season == "Winter")
+)
+pr_win_mods[["logSR_cvr.tree"]] <- pr_win_tree
+pr_win_mods
+lapply(pr_win_mods, summary)
+
+# ... ... Summer ----
+pr_sum_mods <- lapply(names(response_vars), model_func, 
+                      data = dat_train, spp = "Pronghorn", ssn = "Summer")
+names(pr_sum_mods) <- names(response_vars)
+pr_sum_mods
+lapply(pr_sum_mods, summary)
+
+
+
+
