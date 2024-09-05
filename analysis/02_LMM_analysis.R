@@ -386,5 +386,60 @@ pr_sum_mods
 lapply(pr_sum_mods, summary)
 
 
+# ... Bind into one list of lists ----
+md_mods <- list(md_win_mods, md_sum_mods)
+names(md_mods) <- c("Winter", "Summer")
+
+pr_mods <- list(pr_win_mods, pr_sum_mods)
+names(pr_mods) <- c("Winter", "Summer")
+
+all_mods <- list(md_mods, pr_mods)
+names(all_mods) <- c("Mule Deer", "Pronghorn")
+View(all_mods)
+
+# -------------------------X
+# ---- MODEL VALIDATION ----
+# -------------------------X
+valid_func <- function(model_name, data, spp, ssn){
+  if(!spp %in% c("Mule Deer", "Pronghorn") | 
+     !ssn %in% c("Winter", "Summer")){
+    stop("`spp` must be either `Mule Deer` or `Pronghorn`
+       `ssn` must be either `Winter` or `Summer`")
+  }
+  
+  # Filter the data to the given species and season
+  data <- filter(data, species == spp & season == ssn)
+  
+  # Pull the observed column
+  cols <- colnames(data)
+  if(grepl("logSR", model_name)){
+    cov <- gsub("logSR_", "", model_name)
+    cov <- case_when(cov == "ndvi" ~ "ndvi.herb",
+                     cov == "shrub" ~ "cover.shrub", 
+                     cov == "tree" ~ "cover.tree",
+                     TRUE ~ cov)
+    resp_col <- paste("logSR_buff_sc", cov, sep = "_")
+  } else{
+    resp_col <- model_name
+  }
+  if(!all(resp_col %in% cols)){stop(model_name, ": check the response name")}
+  
+  
+  model <- readRDS(model_fn)
+  
+  pred <- predict(model, data, re.form = NA)
+  obs <- data[, resp_col]
+  wgt <- data$n.pts_X_n.days_norm
+  
+  lm <- lm(obs ~ pred)
+  rsq <- summary(lm)$r.squared
+  adj_rsq <- summary(lm)$adj.r.squared
+  
+  df <- data.frame(response = model_name, species = spp, season = ssn,
+                   obs = obs, pred = pred, wgt = wgt,
+                   rsq = rsq, adj_rsq = adj_rsq)
+  return(df)
+}
+
 
 
