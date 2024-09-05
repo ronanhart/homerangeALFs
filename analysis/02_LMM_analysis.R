@@ -35,7 +35,6 @@ library(tidyverse)
 library(lme4)
 library(MuMIn)
 library(lmerTest)
-library(wCorr)
 
 
 # ---------------X
@@ -50,7 +49,7 @@ dat_used_avail_wide <- read.csv(paste0(in_dir, "used_avail_wide.csv"))
 hr_info <- read.csv(paste0(in_dir, "hr_info_full_si.csv"))
 subset_info <- read.csv(paste0(in_dir, "subset_info.csv"))
 
-# Join into one dataset and select only the columns that are necessary for modelling
+# Join into one dataset and select only the columns that are necessary for modeling
 dat <- left_join(dat_used_avail_wide, hr_info, by = "hr_id") %>%
   left_join(subset_info, by = c("hr_id", "species", "sex", "season"))
 head(dat)
@@ -63,12 +62,9 @@ dat <- dat %>%
 head(dat)
 colnames(dat)
 
-# Subset the data based on training/testing flags (from 02a_data_subsetting)
+# Subset the data based on training flags (from 02a_data_subsetting)
 dat_train <- filter(dat, subset == "Train")
 summary(dat_train)
-
-dat_test <- filter(dat, subset == "Test")
-summary(dat_test)
 
 
 # ----------------------X
