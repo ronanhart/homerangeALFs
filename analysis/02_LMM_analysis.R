@@ -126,15 +126,15 @@ model_func <- function(model_name, data, spp, ssn){
             paste(c(paste0(avail, c(lf, env)), ind, int.lf, "n_days", rand), 
                   collapse = " + "),
             collapse = " "))
-    return(formula.area)
-    # tryCatch({
-    #   mod.area <- lmer(formula.area,
-    #                    weights = n.pts_X_n.days_norm, REML = T, na.action = na.omit,
-    #                    data = data)
-    #   return(mod.area)
-    # }, warning = function(w){
-    #   cat("log(area)", spp, ssn, ":", conditionMessage(w), "\n")
-    # })
+    
+    tryCatch({
+      mod.area <- lmer(formula.area,
+                       weights = n.pts_X_n.days_norm, REML = T, na.action = na.omit,
+                       data = data)
+      return(mod.area)
+    }, warning = function(w){
+      cat("log(area)", spp, ssn, ":", conditionMessage(w), "\n")
+    })
   }
   
   # ... b. log(log(Shape)) ----
