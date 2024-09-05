@@ -48,6 +48,6 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 
-# Outputs that are made from R (so don't need to be on git)
-prepped_data/*
-raw_data/HRs/*
+# Data folders 
+# (raw_data is uploaded to Dryad and prepped_data can be re-made with R)
+*_data/*
