@@ -1,6 +1,8 @@
 # 
 This repository contains the reproducible code for performing the analysis for the manuscript "The impacts of anthropogenic linear features on the space-use patterns of two sympatric ungulates"
 
+The data available for this analysis are uploaded to Dryad [not currently public but will be once the paper is published]
+
 # README for Dryad
 (This part of the README is temporary until the data set on Dryad is public)
 
