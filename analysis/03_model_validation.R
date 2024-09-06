@@ -16,9 +16,9 @@ data_dir <- "prepped_data/"
 result_dir <- "results/"
 
 # ... Load & Prep the data ----
-dat_used_avail_wide <- read.csv(paste0(in_dir, "used_avail_wide.csv"))
-hr_info <- read.csv(paste0(in_dir, "hr_info_full_si.csv"))
-subset_info <- read.csv(paste0(in_dir, "subset_info.csv"))
+dat_used_avail_wide <- read.csv(paste0(data_dir, "used_avail_wide.csv"))
+hr_info <- read.csv(paste0(data_dir, "hr_info_full_si.csv"))
+subset_info <- read.csv(paste0(data_dir, "subset_info.csv"))
 
 # Join into one data set and select only the columns that are necessary for modeling
 dat <- left_join(dat_used_avail_wide, hr_info, by = "hr_id") %>%
@@ -39,8 +39,14 @@ summary(dat_test)
 
 
 # ...Load the models ----
-all_mods <- readRDS(paste0(out_dir, "all_models.rds"))
+all_mods <- readRDS(paste0(result_dir, "all_models.rds"))
 View(all_mods)
+
+# set up a vector of the response variables
+env <- c("elev", "rough", "forage", "cvr.shrub", "cvr.tree", "snd")
+lf <- c("rd.pvd", "rd.unpvd", "fence")
+response_vars <- c("log_area", "log_log_shape", 
+                   paste0("logSR_", lf), paste0("logSR_", env))
 
 # -------------------------X
 # ---- MODEL VALIDATION ----
@@ -108,7 +114,7 @@ valid_func <- function(x){
 # For TESTING data
 obs_pred <- lapply(c("Mule Deer", "Pronghorn"), function(spp){
   lapply(c("Winter", "Summer"), function(ssn){
-    lapply(names(response_vars), obs_pred_func, 
+    lapply(response_vars, obs_pred_func, 
            data = dat_test, spp = spp, ssn = ssn) %>%
       bind_rows()
   }) %>% bind_rows()
@@ -159,6 +165,14 @@ model_fit <- obs_pred %>%
   unnest(cols = model_fit)
 head(model_fit)
 summary(model_fit)
+
+model_fit %>%
+  filter(response %in% c("log_area", "log_log_shape", "logSR_rd.pvd",
+                         "logSR_fence", "logSR_forage", "logSR_snd")) %>%
+  select(species, season, response_name, corr) %>%
+  distinct() %>% data.frame()
+  
+
 
 # ... PLOT ----
 model_fit %>%
