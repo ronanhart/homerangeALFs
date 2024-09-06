@@ -1,4 +1,12 @@
-# Home range data for "The impacts of anthropogenic linear features on the space-use patterns of two sympatric ungulates"
+# 
+This repository contains the reproducible code for performing the analysis for the manuscript "The impacts of anthropogenic linear features on the space-use patterns of two sympatric ungulates"
+
+The data available for this analysis are uploaded to Dryad [not currently public but will be once the paper is published]
+
+# README for Dryad
+(This part of the README is temporary until the data set on Dryad is public)
+
+## Home range data for "The impacts of anthropogenic linear features on the space-use patterns of two sympatric ungulates"
 
 [https://doi.org/10.5061/dryad.c2fqz61k6](https://doi.org/10.5061/dryad.c2fqz61k6)
 
@@ -8,7 +16,7 @@ These data contain 1) the shapefiles of the k-LoCoH home ranges/occurrence distr
 
 ### Files and variables
 
-#### File: raw\_data.zip
+#### File: raw_data.zip
 
 The structure of these data are as follows:
 
