@@ -7,17 +7,17 @@ This repository contains the reproducible code for performing the analysis for t
 
 [https://doi.org/10.5061/dryad.c2fqz61k6](https://doi.org/10.5061/dryad.c2fqz61k6)
 
-#### Description of the data and file structure
+## Description of the data and file structure
 
 These data contain 1) the shapefiles of the k-LoCoH home ranges/occurrence distributions, 2) the home ranges' used/available data , and 3) the metadata for each pronghorn and mule deer home range used in this analysis. Because the GPS location data for these animals are sensitive and protected by the Utah Division of Wildlife Resources (UDWR), we have only included the derived home ranges. We included the used/available attributed data as we could not include the full dataset of environmental and linear feature covariates that we used to find these used/available attributes, however all of those data are publicly available.
 
-###### Files and variables
+### Files and variables
 
-######## File: raw\_data.zip
+#### File: raw\_data.zip
 
 The structure of these data are as follows:
 
-########## `HRs` (home ranges)
+##### `HRs` (home ranges)
 
 These are the shapefiles of the k-LoCoH home ranges. They are projected to the coordinate reference system  WGS 84 / UTM zone 12N (EPSG:32612)
 
@@ -34,7 +34,7 @@ These are the shapefiles of the k-LoCoH home ranges. They are projected to the c
 * `area`: the area of that isopleth in m2
 * `what`: indicates that these are estimates of home ranges (each row is labled "estimate")
 
-########## `used_avail_long`
+##### `used_avail_long`
 
 These are the average (weighted by intensity of use) of the used environmental and linear features within the home range and the average availabilities within a 1km buffer around the centroid of the home range.
 
@@ -52,7 +52,7 @@ These are the average (weighted by intensity of use) of the used environmental a
   * `snd`: snow depth
 * `used`; `avail`: the average used and available of the given attribute 
 
-########## `hr_info`
+##### `hr_info`
 
 Metadata for each home range
 
@@ -66,10 +66,10 @@ Metadata for each home range
 * `n_pts`: how many GPS points were used to delineate the home range
 * `n_days`: how many days the GPS collar recorded location data for this animal on its home range (minimum 20)
 
-#### Code/software
+## Code/software
 
 To see how these data were used in the analysis for this paper, see the github repository for this paper: [https://github.com/ronanhart/homerangeALFs](https://github.com/ronanhart/homerangeALFs)
 
-#### Access information
+## Access information
 
 Data was derived from GPS location data that were provided by the Utah Division of Wildlife Resources (UDWR)
