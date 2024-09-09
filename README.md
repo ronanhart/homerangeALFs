@@ -1,7 +1,19 @@
 # 
 This repository contains the reproducible code for performing the analysis for the manuscript "The impacts of anthropogenic linear features on the space-use patterns of two sympatric ungulates"
 
+# Data
+
 The data available for this analysis are uploaded to Dryad [not currently public but will be once the paper is published]
+
+# Workflow
+
+All scripts are stored in the `analysis/` folder. The number prefix indicates the order they should be executed. Here is a brief description of what each script does:
+
+File Name       | Description | Inputs | Outputs
+----------------|-------------|--------|---------
+`01_prep_data.R`| prepares the data for analysis by 1) calculating the shape index, 2) normalizing & scaling & centering values, 3) pivoting wider so each row is an HR and its associated covariates, and 4) subsets into testing and training  | `used_avail_long.csv`, `hr_info.csv`, `HRs.shp` | `used_avail_wide.csv`, `hr_info_full_si.csv`, `subset_info.csv`, `scale_df.csv`
+`02_LMM_analysis.R` | performs all the linear mixed models | `used_avail_wide.csv`, `hr_info_full_si.csv`, `subset_info.csv` | `all_models.rds`
+`03_model_validation.R` | performs model validation by calculating the Pearson's correlation coefficient for all models | `used_avail_wide.csv`, `hr_info_full_si.csv`, `subset_info.csv`, `all_models.rds` | N/A
 
 # README for Dryad
 (This part of the README is temporary until the data set on Dryad is public)
