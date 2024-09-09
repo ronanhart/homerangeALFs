@@ -116,8 +116,7 @@ scale_df <- dat_used_avail  %>%
     sd_logSR = sd(logSR_new, na.rm = T)
   )
 scale_df
-write.csv(scale_df, paste0(out_dir, "scale_df.csv"),
-          row.names = F)
+
 
 # Now a function that takes 'scale_df' and scales and centers all variables
 # that appear in 'scale_df'.
@@ -325,3 +324,4 @@ subset_info %>%
 write.csv(dat_used_avail_wide, paste0(out_dir, "used_avail_wide.csv"), row.names = F)
 write.csv(hr_info, paste0(out_dir, "hr_info_full_si.csv"), row.names = F)
 write.csv(subset_info, paste0(out_dir, "subset_info.csv"), row.names = F)
+write.csv(scale_df, paste0(out_dir, "scale_df.csv"), row.names = F)
