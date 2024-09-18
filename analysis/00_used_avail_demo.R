@@ -93,6 +93,7 @@ gc()
 # ---- PERFORM USED-AVAIL ANALYIS ---- 
 # -----------------------------------X
 ## Set up functions ----
+# Funciton to rasterize the home range
 rasterize_hr <- function(hr){
   # Add a new column called "intensity"
   # this is so the smaller isopleths are attributed with a higher intensity of use
@@ -125,28 +126,116 @@ rasterize_hr <- function(hr){
     rast_out <- norm(hr_rast, total)
     
     # check that all values sum to the max value of the UD
-    if(sum(values(rast_out), na.rm = T) != 1){
+    if(!all.equal(sum(values(rast_out), na.rm = T), 1)){
       stop("HR raster not normalized correctly")
     }
+    return(rast_out)
   }
 }
 
+# Function to generate a buffer (availability domain) around the home range
+# (default buffer width = 10km = 100km^2)
+generate_avail <- function(hr, buff_width = 10000){
+  # find the centroid of the 95% isopleth
+  center <- hr %>%
+    filter(level == max(hr$level)) %>%
+    st_centroid()
+  
+  # (half) width of buffer (width from the center) in meters
+  # (side length is 2x)
+  # *---------------*
+  # \       \       \
+  # \     x \       \
+  # \       \   x   \
+  # \       O-------\ 2x
+  # \               \
+  # \               \
+  # \      2x       \
+  # *---------------*
+  # buf_width = 2x, so need to divide by 2
+  # create blank raster of same crs and resolution as the HR,  
+  # extent is the center +/- the given buffer width divided by 2)
+  
+  # first create an sf buffer (circular) and then find the extent (square)
+  buff <- st_buffer(center, (buff_width/2))
+  buff_out <- ext(buff)
+  
+  # return the extent of the buffer
+  return(buff_out)
+}
+
+# Function to calculate used and avail of the given environmental/attribute (attr) raster
+# In this demo, we are using the given year-season 'forage' raster
+extract_used_avail <- function(attr_stack, used_rast, avail_rast){
+  # Crop attribute raster stack to weighted used space and unweighted avail space
+  attr_crop_used <- crop(attr_stack, used_rast)
+  attr_crop_avail <- crop(attr_stack, avail_rast)
+  
+  # 1) Calculate weighted average use
+    # multiply cropped environmental raster with the used space
+    #   (this is because the values of the used space raster are weighted by 
+    #   intensity of use, so the attribute values that fall within areas that were 
+    #   used more intensely will be weighted higher)
+  attr_mult_used <- attr_crop_used * used_rast
+  
+    # sum the values together
+    # because the HR raster cells were weighted by intensity of use
+    # and then normalized to sum to 1,
+    # this sum will result in a weighted average
+  wgt_avg_used <- sum(values(attr_mult_used), na.rm = T)
+  
+  # 2) Calculate average availability
+    # we simply need to calculate the mean value of the attribute's values 
+    # within the available space
+  avg_avail <- mean(values(attr_crop_avail), na.rm = T)
+  
+  # return the used and available values
+  used_avail <- list(wgt_avg_used, avg_avail)
+  names(used_avail) <- c("used", "available")
+  return(used_avail)
+}
+
 # Loop through each year-season
-lapply(years, function(yr){
-  lapply(season, function(ssn){
-    # Pull the corresponding environmental raster
-    r <- forage[[paste(year, ssn, sep = "_")]]
-    
-    # Filter home ranges to those that were in this year and season
-    hr_info_yr_ssn <- filter(hr_info, year == yr & month == ssn)
-    hrs_yr_ssn <- filter(hrs, hr_id %in% unique(hr_info_yr_ssn$hr_id))
-    
-    # split by HR ID
-    hrs_yr_ssn <- split(hrs_yr_ssn, hrs_yr_ssn$hr_id)
-    
-    # Loop through each home range
-    lapply(hrs_yr_ssn, function(hr){
+system.time({
+  used_avail_df <- lapply(years, function(yr){
+    lapply(seasons, function(ssn){
+      cat(yr, ssn, "\n")
       
-    })
-  })
+      # Pull the corresponding environmental raster
+      r <- forage[[paste(yr, ssn, sep = "_")]]
+      
+      # Filter home ranges to those that were in this year and season
+      hr_info_yr_ssn <- filter(hr_info, year == yr & month == ssn)
+      hrs_yr_ssn <- filter(hrs, hr_id %in% unique(hr_info_yr_ssn$hr_id))
+      
+      # split by HR ID
+      hrs_yr_ssn <- split(hrs_yr_ssn, hrs_yr_ssn$hr_id)
+      
+      # Loop through each home range
+      lapply(hrs_yr_ssn, function(hr){
+        
+        cat(unique(hr$hr_id), "\n")
+        
+        # rasterize the HR and normalize so all cell values sum to 1
+        hr_rast <- rasterize_hr(hr)
+        
+        # find the extent of the availability domain (100-km2 square around HR center)
+        avail <- generate_avail(hr)
+        
+        # Calculate the weighted average of use (weighted by intensity of use)
+        used_avail <- extract_used_avail(attr_stack = r, 
+                                         used_rast = hr_rast, 
+                                         avail_rast = avail)
+        
+        # fill use/avail table
+        used_avail_df <- list(unique(hr$hr_id), used_avail[[1]], used_avail[[2]]) %>% 
+          as.data.frame(optional = T, col.names = c("hr_id", "used", "available"))
+        rownames(used_avail_df) <- NULL
+        
+        # Return
+        return(used_avail_df)
+      }) %>% bind_rows()
+    }) %>% bind_rows()
+  }) %>% bind_rows()
 })
+
