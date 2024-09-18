@@ -214,8 +214,6 @@ system.time({
       # Loop through each home range
       lapply(hrs_yr_ssn, function(hr){
         
-        cat(unique(hr$hr_id), "\n")
-        
         # rasterize the HR and normalize so all cell values sum to 1
         hr_rast <- rasterize_hr(hr)
         
@@ -237,5 +235,10 @@ system.time({
       }) %>% bind_rows()
     }) %>% bind_rows()
   }) %>% bind_rows()
-})
+}) # ~15 min
 
+head(used_avail_df)
+used_avail_df %>%
+  mutate(sr = used/available,
+         logSR = log(sr)) %>%
+  summary()
