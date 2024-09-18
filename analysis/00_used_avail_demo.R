@@ -1,3 +1,13 @@
+# X================================================X
+# X------------------ HR Analysis -----------------X
+# X---- Demonstrate Used/Available Calculation ----X
+# X================================================X
+
+# NOTE: This is just a demonstration to show how the used/available framework was done
+# For that reason, I have generated a simulated environmental raster stack
+# The output of this script is not saved, as this is just a demonstration
+
+
 library(terra)
 library(sf)
 library(tidyverse)
@@ -118,6 +128,7 @@ rasterize_hr <- function(hr){
     if(sum(values(rast_out), na.rm = T) != 1){
       stop("HR raster not normalized correctly")
     }
+  }
 }
 
 # Loop through each year-season
